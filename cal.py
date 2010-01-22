@@ -131,7 +131,7 @@ from google.appengine.api import urlfetch
 
 class Fetcher:
     def fetch(self, address):
-        base_url = "http://kk.sites.itera.dk/apps/kk_afhentningstider/afhentningstider.asp"
+        base_url = "http://kk.sites.itera.dk/apps/kk_afhentningstider/afhentningstider10.asp"
         form_fields = {
           "mode": "detalje",
           "id": address.encode('iso-8859-1')
