@@ -158,7 +158,7 @@ from datetime import datetime
 
 class Parser:
     def parse_date(self, date_string):
-        dt = datetime.strptime(date_string, "%d.%m.%y")
+        dt = datetime.strptime(date_string, "%d-%m-%Y")
         return dt.date()
         
     def parse_dates(self, dates):
@@ -174,6 +174,7 @@ class Parser:
         matches = re.finditer(pattern, data)
         for m in matches:
             (garbage_type, dates) = m.group(1, 2)
+            logging.info("Type: " + garbage_type + ", dates: " + dates)
             dates_as_list = self.parse_dates(dates)
             garbage_types[garbage_type] = dates_as_list
             
