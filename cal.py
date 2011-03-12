@@ -65,8 +65,8 @@ class Calendar(webapp.RequestHandler):
     def should_refresh_data(self, garbage):
         return not garbage.content or (date.today() - garbage.updateDate).days > 1
     
-    def get(self, calendar_id):
-        logging.info("Calendar ID: %s" % calendar_id)
+    def get(self, calendar_id, output_type):
+        logging.info("Calendar ID: %s, output: %s", calendar_id, output_type)
         self.response.headers['Content-Type'] = 'text/calendar'
 
         garbage = Garbage.get(calendar_id)
@@ -87,18 +87,32 @@ class Calendar(webapp.RequestHandler):
 
         dates = self.expand_dates(garbage_types)
 
-        ics = IcsGenerator().generate(dates)
-        self.response.out.write(ics)
+        if output_type == 'ics':
+            generator = IcsGenerator()
+        elif output_type == 'json':
+            generator = JsonGenerator()
+
+        response_text = generator.generate(dates)
+        self.response.headers["Content-Type"] = generator.contentType()
+        self.response.out.write(response_text)
+
+class JsonGenerator:
+    def contentType(self):
+        return "application/json"
+
+    def generate(self, dates):
+        header = """{"dates": ["""
+        footer = "]}"
+        event_template = """{"type": "%s", date: "%s"}"""
+
+        events = [event_template % (pickup.date.strftime('%Y%m%d'), pickup.description) for pickup in dates]
+        events_string = ",".join(events)
+
+        return header + events_string + footer
 
 class IcsGenerator:
-    def generate_type(self, description, date_list):
-        
-        events = []
-        for date in date_list:
-            event = event_template % (date, date.today(), description)
-            events.append(event)
-
-        return event.join('\n')
+    def contentType(self):
+        return "text/calendar"
 
     def generate(self, dates):
         header = """BEGIN:VCALENDAR
@@ -118,9 +132,7 @@ END:VEVENT
 
         today = date.today().strftime('%Y%m%dT000048Z')
         events = [event_template % (today, pickup.date.strftime('%Y%m%d'), pickup.description) for pickup in dates]
-        events_string = ""
-        for event in events:
-            events_string = events_string + event
+        events_string = "".join(events)
 
         return header + events_string + footer
 
@@ -184,7 +196,7 @@ class Parser:
 
 application = webapp.WSGIApplication(
                                      [
-                                        (r'/calendar/(\w+)\.ics', Calendar),
+                                        (r'/calendar/(\w+)\.(ics|json)', Calendar),
                                         ('/.*', Register)
                                      ],
                                      debug=True)
